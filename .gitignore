@@ -47,3 +47,5 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+data/trial analysis August 2023 clean version.xlsx  ## don't upload raw data to public GitHub repository
