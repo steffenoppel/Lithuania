@@ -7,6 +7,8 @@
 ## creates simple map of fishing trials
 ## produces basic raw data summary
 
+## updated on 12 Jan 2024 after receiving new database
+
 
 ### Load libraries
 library(ggplot2)
@@ -32,26 +34,28 @@ try(setwd("C:\\STEFFEN\\RSPB\\Marine\\Bycatch\\GillnetBycatch\\Analysis\\Lithuan
 try(setwd("C:\\STEFFEN\\OneDrive - THE ROYAL SOCIETY FOR THE PROTECTION OF BIRDS\\STEFFEN\\RSPB\\Marine\\Bycatch\\GillnetBycatch\\Analysis\\Lithuania"), silent=T)
 
 # Read the data from sheets in Excel file - stripping Lithuanian header in second row
-tripcols <- as.character(read_excel("data/trial analysis August 2023 clean version.xlsx", sheet="tbl_trip", n_max = 1, col_names = FALSE))
-trips <- read_excel("data/trial analysis August 2023 clean version.xlsx", sheet="tbl_trip", skip=3, col_names = tripcols)
+tripcols <- as.character(read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_trip", n_max = 1, col_names = FALSE))
+trips <- read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_trip", skip=3, col_names = tripcols)
 head(trips)
-setcols <- as.character(read_excel("data/trial analysis August 2023 clean version.xlsx", sheet="tbl_set", n_max = 1, col_names = FALSE))
-sets <- read_excel("data/trial analysis August 2023 clean version.xlsx", sheet="tbl_set", skip=3, col_names = setcols[1:31])
+setcols <- as.character(read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_set", n_max = 1, col_names = FALSE))
+sets <- read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_set", skip=3, col_names = setcols[1:33])
+
+## combine date and time into a single field
 hour(sets$Depl_Date)<-ifelse(is.na(sets$Depl_Time),12,hour(sets$Depl_Time))
 minute(sets$Depl_Date)<-ifelse(is.na(sets$Depl_Time),0,minute(sets$Depl_Time))
-hour(sets$Depl_Date)<-ifelse(is.na(sets$Depl_Time),12,hour(sets$Depl_Time))
-minute(sets$Depl_Date)<-ifelse(is.na(sets$Depl_Time),0,minute(sets$Depl_Time))
-# month(sets$Depl_Time)<-month(sets$Depl_Date)
-# day(sets$Depl_Time)<-day(sets$Depl_Date)
+hour(sets$Haul_Date)<-ifelse(is.na(sets$Haul_time),12,hour(sets$Haul_time))
+minute(sets$Haul_Date)<-ifelse(is.na(sets$Haul_time),0,minute(sets$Haul_time))
 head(sets)
-gearcols <- as.character(read_excel("data/trial analysis August 2023 clean version.xlsx", sheet="tbl_gear", n_max = 1, col_names = FALSE))
-gear <- read_excel("data/trial analysis August 2023 clean version.xlsx", sheet="tbl_gear", skip=3, col_names = gearcols[1:9])
+gearcols <- as.character(read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_gear", n_max = 1, col_names = FALSE))
+gear <- read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_gear", skip=3, col_names = gearcols[1:9])
 head(gear)
 
 # Read the data from sheets in Excel file - stripping Lithuanian header in first row
-fish <- read_excel("data/trial analysis August 2023 clean version.xlsx", sheet="tbl_fish", skip=0)
+fishcols <- as.character(read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_fish", n_max = 1, col_names = FALSE))
+fish <- read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_fish", skip=3, col_names = c(fishcols,"ignore"))
 head(fish)
-bycatch <- read_excel("data/trial analysis August 2023 clean version.xlsx", sheet="tbl_bycatch", skip=1)
+bycatchcols <- as.character(read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_bycatch", n_max = 1, col_names = FALSE))
+bycatch <- read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_bycatch", skip=2, col_names = bycatchcols)
 head(bycatch)
 
 
@@ -66,24 +70,25 @@ head(bycatch)
 ### calculate fishing effort per set
 effortsummary<-sets  %>%
   left_join(gear, by="Set_ID") %>%
-  select(Trip_ID,Set_ID,Cont_Treat,Season, Month,Depl_Date,Valandos, Total_net_area) %>%
-  mutate(Hours_deployed=ifelse(is.na(Valandos),12,Valandos)) %>%    ## make up number for sets with no soak time
+  select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season, Month,Depl_Date,Haul_Date, Total_net_area) %>%
+  mutate(Hours_deployed=as.numeric(difftime(Haul_Date,Depl_Date, units="hours"))) %>%  ## this does not work because it cannot deal with numbers >23:59
+  mutate(Hours_deployed=ifelse(is.na(Hours_deployed),12,Hours_deployed)) %>%    ## make up number for sets with no soak time
   mutate(Hours_deployed=ifelse(Hours_deployed==0,12,Hours_deployed)) %>%   ## make up number for sets with 0 soak time
-  #mutate(Hours_deployed=as.numeric(hour(Hours_deployed)+(minute(Hours_deployed)/60))) %>%  ## this does not work because it cannot deal with numbers >23:59
   mutate(Effort=Hours_deployed*Total_net_area)
 
 ### calculate fish caught per set
 fishsummary<-fish  %>%
-  rename(mass=`Weight, kg`, Cont_Treat=Net_modification) %>%
-  group_by(Trip_ID,Cont_Treat,  Set_ID, Species) %>%
+  rename(mass=`Weight, kg`, Species=`Fish species`) %>%
+  group_by(Trip_ID,Trial_type_by_fishermen,  Set_ID, Species) %>%
   summarise(catch=sum(mass, na.rm=T))
 totalfishsummary<-fish  %>%
-  rename(mass=`Weight, kg`, Cont_Treat=Net_modification) %>%
+  rename(mass=`Weight, kg`) %>%
   group_by(Set_ID) %>%
   summarise(catch=sum(mass, na.rm=T))
 
 ### calculate bird bycatch per set
 birdsummary<-bycatch  %>%
+  rename(Species=`Bird species`) %>%
   mutate(n=1) %>%
   group_by(Set_ID, Species) %>%
   summarise(bycatch=sum(n, na.rm=T))
@@ -102,8 +107,11 @@ alldata<-effortsummary %>%
   mutate(CPUE=catch/Effort, BPUE=bycatch/Effort)
 head(alldata)
 
-
-
+#### SAVE DATA FOR ANALYSIS
+analysisdata<-alldata %>%
+  select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season,Month,Total_net_area, Hours_deployed, Effort, catch,bycatch, CPUE, BPUE) %>%
+  left_join(sets[,c(2,4,30)], by="Set_ID")
+saveRDS(analysisdata,"data/LIT_bycatch_data_formatted.rds")
 
 
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
@@ -112,7 +120,9 @@ head(alldata)
 #####
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 
-SUMMARY <- alldata %>% group_by(Season, Cont_Treat) %>%
+SUMMARY <- alldata %>%
+  mutate(Trial_type_by_fishermen=ifelse(Trial_type_by_fishermen=="Control2","Control",Trial_type_by_fishermen)) %>%
+  group_by(Season, Trial_type_by_fishermen) %>%
   summarise(n_sets=length(unique(Set_ID)), Tot_effort=sum(Effort,na.rm=T), Tot_fish=sum(catch,na.rm=T), Tot_bycatch=sum(bycatch,na.rm=T), CPUE=mean(CPUE,na.rm=T), BPUE=mean(BPUE,na.rm=T))
 
 SUMMARY
@@ -129,9 +139,9 @@ mean(alldata$Effort)
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 
 alldata %>%
-  mutate(Cont_Treat=if_else(Cont_Treat=="Control2","Control",Cont_Treat)) %>%
+  mutate(Trial_type_by_fishermen=if_else(Trial_type_by_fishermen=="Control2","Control",Trial_type_by_fishermen)) %>%
   
-  ggplot(aes(y=BPUE*12322.71, x=Cont_Treat)) +
+  ggplot(aes(y=BPUE*12322.71, x=Trial_type_by_fishermen)) +
   #geom_point(size=2, colour="firebrick",position=position_jitter(width = 0.15, height = 0))+
   geom_violin(colour="firebrick")+
   #scale_y_continuous(limits=c(-1.5,1.5), breaks=seq(-1.5,1.5,0.5)) +
