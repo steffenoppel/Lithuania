@@ -174,6 +174,235 @@ bind_rows(BPUE_control,BPUE_kite,BPUE_night,CPUE_control,CPUE_kite,CPUE_night) %
 ggsave("output/LIT_bycatch_mitigation_summary.jpg", width=8, height=11)
 
 
+
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+#####
+#####    BASIC BOOTSTRAP ANALYSIS COMPARING BPUE AND CPUE FOR SEADUCKS ~~~~~~~~~~~~~~~~~~~~########
+#####
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+
+
+controls<- data %>% filter(Trial_type_by_fishermen=="Control") 
+kites<- data %>% filter(Trial_type_by_fishermen=="Kites")
+nights<- data %>% filter(Trial_type_by_fishermen=="Night")
+
+
+## bootstrapping the BPUE samples (10000 random draws)
+control.samples <- matrix(sample(controls$SDBPUE, size = 10000 * nrow(controls), replace = TRUE),10000, nrow(controls))
+control.statistics <- apply(control.samples, 1, mean)
+BPUE_control<-data.frame(treatment="control",mean=mean(control.statistics),
+                         lcl=quantile(control.statistics,0.025),ucl=quantile(control.statistics,0.975))
+
+kite.samples <- matrix(sample(kites$SDBPUE, size = 10000 * nrow(kites), replace = TRUE),10000, nrow(kites))
+kite.statistics <- apply(kite.samples, 1, mean)
+BPUE_kite<-data.frame(treatment="kite",mean=mean(kite.statistics),
+                      lcl=quantile(kite.statistics,0.025),ucl=quantile(kite.statistics,0.975))
+
+night.samples <- matrix(sample(nights$SDBPUE, size = 10000 * nrow(nights), replace = TRUE),10000, nrow(nights))
+night.statistics <- apply(night.samples, 1, mean)
+BPUE_night<-data.frame(treatment="night",mean=mean(night.statistics),
+                       lcl=quantile(night.statistics,0.025),ucl=quantile(night.statistics,0.975))
+
+
+### calculating the BPUE differences
+
+KITE_DIFF_BPUE<-data.frame(treatment="kite_control_diff",mean=mean(kite.statistics-control.statistics),
+                           lcl=quantile(kite.statistics-control.statistics,0.025),ucl=quantile(kite.statistics-control.statistics,0.975))
+NIGHT_DIFF_BPUE<-data.frame(treatment="night_control_diff",mean=mean(night.statistics-control.statistics),
+                            lcl=quantile(night.statistics-control.statistics,0.025),ucl=quantile(night.statistics-control.statistics,0.975))
+
+
+
+### quantifying differences in per cent
+KITE_DIFF_BPUE[,5:7]<-(KITE_DIFF_BPUE[,2:4]/BPUE_control[,2:4])*100
+NIGHT_DIFF_BPUE[,5:7]<-(NIGHT_DIFF_BPUE[,2:4]/BPUE_control[,2:4])*100
+
+
+
+
+## bootstrapping the CPUE samples (10000 random draws)
+control.samples <- matrix(sample(controls$CPUE, size = 10000 * nrow(controls), replace = TRUE),10000, nrow(controls))
+control.statistics <- apply(control.samples, 1, mean)
+CPUE_control<-data.frame(treatment="control",mean=mean(control.statistics),
+                         lcl=quantile(control.statistics,0.025),ucl=quantile(control.statistics,0.975))
+
+kite.samples <- matrix(sample(kites$CPUE, size = 10000 * nrow(kites), replace = TRUE),10000, nrow(kites))
+kite.statistics <- apply(kite.samples, 1, mean)
+CPUE_kite<-data.frame(treatment="kite",mean=mean(kite.statistics),
+                      lcl=quantile(kite.statistics,0.025),ucl=quantile(kite.statistics,0.975))
+
+night.samples <- matrix(sample(nights$CPUE, size = 10000 * nrow(nights), replace = TRUE),10000, nrow(nights))
+night.statistics <- apply(night.samples, 1, mean)
+CPUE_night<-data.frame(treatment="night",mean=mean(night.statistics),
+                       lcl=quantile(night.statistics,0.025),ucl=quantile(night.statistics,0.975))
+
+
+### calculating the BPUE differences
+
+KITE_DIFF_CPUE<-data.frame(treatment="kite_control_diff",mean=mean(kite.statistics-control.statistics),
+                           lcl=quantile(kite.statistics-control.statistics,0.025),ucl=quantile(kite.statistics-control.statistics,0.975))
+NIGHT_DIFF_CPUE<-data.frame(treatment="night_control_diff",mean=mean(night.statistics-control.statistics),
+                            lcl=quantile(night.statistics-control.statistics,0.025),ucl=quantile(night.statistics-control.statistics,0.975))
+
+
+
+### quantifying differences in per cent
+KITE_DIFF_CPUE[,5:7]<-(KITE_DIFF_CPUE[,2:4]/CPUE_control[,2:4])*100
+NIGHT_DIFF_CPUE[,5:7]<-(NIGHT_DIFF_CPUE[,2:4]/CPUE_control[,2:4])*100
+
+
+
+### COMBINE NUMBERS FOR OUTPUT FILE
+
+DIFF_SUMMARY<-bind_rows(KITE_DIFF_BPUE,NIGHT_DIFF_BPUE,KITE_DIFF_CPUE,NIGHT_DIFF_CPUE) %>%
+  mutate(mean=mean*12322.71,lcl=lcl*12322.71,ucl=ucl*12322.71) %>%
+  rename(`prop.mean.diff(%)`=mean.1,`prop.lcl.diff(%)`=lcl.1,`prop.ucl.diff(%)`=ucl.1) %>%
+  rename(`abs.mean.diff(N)`=mean,`abs.lcl.diff(N)`=lcl,`abs.ucl.diff(N)`=ucl) %>%
+  mutate(Type=c(rep("seaduck bycatch",2),rep("Fish catch",2))) %>%
+  select(Type,treatment,everything())
+
+fwrite(DIFF_SUMMARY,"output/LIT_seaduck_mitigation_difference_summary.csv")
+
+
+
+### PLOT predicted OUTPUT FOR FISH AND SEABIRDS ###
+
+bind_rows(BPUE_control,BPUE_kite,BPUE_night,CPUE_control,CPUE_kite,CPUE_night) %>%
+  mutate(Type=c(rep("BPUE",3),rep("CPUE",3))) %>%
+  ggplot(aes(y=mean*12322.71, x=treatment, col=Type)) + geom_point(size=3)+
+  geom_errorbar(aes(ymin=lcl*12322.71, ymax=ucl*12322.71), width=.05)+
+  facet_wrap(~Type, ncol=1,scales="free_y",strip.position = "left", 
+             labeller = as_labeller(c(BPUE = "seaduck bycatch (N)", CPUE = "Fish catch (kg)") ) ) +
+  #scale_y_continuous(limits=c(0,0.5), breaks=seq(0,0.5,0.1)) +
+  xlab("") +
+  ylab("Catch per average set effort") +
+  theme(panel.background=element_rect(fill="white", colour="black"), 
+        axis.text=element_text(size=16, color="black"), 
+        axis.title=element_text(size=18), 
+        strip.text=element_text(size=18, color="black"),
+        legend.position="none",
+        strip.background = element_blank(),
+        strip.placement = "outside", 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank())
+
+ggsave("output/LIT_seaduck_bycatch_mitigation_summary.jpg", width=8, height=11)
+
+
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+#####
+#####    BASIC BOOTSTRAP ANALYSIS COMPARING BPUE AND CPUE GLOBALLY ~~~~~~~~~~~~~~~~~~~~~~~~########
+#####
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+
+
+controls<- data %>% filter(Trial_type_by_fishermen=="Control") 
+kites<- data %>% filter(Trial_type_by_fishermen=="Kites")
+nights<- data %>% filter(Trial_type_by_fishermen=="Night")
+
+
+## bootstrapping the BPUE samples (10000 random draws)
+control.samples <- matrix(sample(controls$LTBPUE, size = 10000 * nrow(controls), replace = TRUE),10000, nrow(controls))
+control.statistics <- apply(control.samples, 1, mean)
+BPUE_control<-data.frame(treatment="control",mean=mean(control.statistics),
+                         lcl=quantile(control.statistics,0.025),ucl=quantile(control.statistics,0.975))
+
+kite.samples <- matrix(sample(kites$LTBPUE, size = 10000 * nrow(kites), replace = TRUE),10000, nrow(kites))
+kite.statistics <- apply(kite.samples, 1, mean)
+BPUE_kite<-data.frame(treatment="kite",mean=mean(kite.statistics),
+                      lcl=quantile(kite.statistics,0.025),ucl=quantile(kite.statistics,0.975))
+
+night.samples <- matrix(sample(nights$LTBPUE, size = 10000 * nrow(nights), replace = TRUE),10000, nrow(nights))
+night.statistics <- apply(night.samples, 1, mean)
+BPUE_night<-data.frame(treatment="night",mean=mean(night.statistics),
+                       lcl=quantile(night.statistics,0.025),ucl=quantile(night.statistics,0.975))
+
+
+### calculating the BPUE differences
+
+KITE_DIFF_BPUE<-data.frame(treatment="kite_control_diff",mean=mean(kite.statistics-control.statistics),
+                           lcl=quantile(kite.statistics-control.statistics,0.025),ucl=quantile(kite.statistics-control.statistics,0.975))
+NIGHT_DIFF_BPUE<-data.frame(treatment="night_control_diff",mean=mean(night.statistics-control.statistics),
+                            lcl=quantile(night.statistics-control.statistics,0.025),ucl=quantile(night.statistics-control.statistics,0.975))
+
+
+
+### quantifying differences in per cent
+KITE_DIFF_BPUE[,5:7]<-(KITE_DIFF_BPUE[,2:4]/BPUE_control[,2:4])*100
+NIGHT_DIFF_BPUE[,5:7]<-(NIGHT_DIFF_BPUE[,2:4]/BPUE_control[,2:4])*100
+
+
+
+
+## bootstrapping the CPUE samples (10000 random draws)
+control.samples <- matrix(sample(controls$CPUE, size = 10000 * nrow(controls), replace = TRUE),10000, nrow(controls))
+control.statistics <- apply(control.samples, 1, mean)
+CPUE_control<-data.frame(treatment="control",mean=mean(control.statistics),
+                         lcl=quantile(control.statistics,0.025),ucl=quantile(control.statistics,0.975))
+
+kite.samples <- matrix(sample(kites$CPUE, size = 10000 * nrow(kites), replace = TRUE),10000, nrow(kites))
+kite.statistics <- apply(kite.samples, 1, mean)
+CPUE_kite<-data.frame(treatment="kite",mean=mean(kite.statistics),
+                      lcl=quantile(kite.statistics,0.025),ucl=quantile(kite.statistics,0.975))
+
+night.samples <- matrix(sample(nights$CPUE, size = 10000 * nrow(nights), replace = TRUE),10000, nrow(nights))
+night.statistics <- apply(night.samples, 1, mean)
+CPUE_night<-data.frame(treatment="night",mean=mean(night.statistics),
+                       lcl=quantile(night.statistics,0.025),ucl=quantile(night.statistics,0.975))
+
+
+### calculating the BPUE differences
+
+KITE_DIFF_CPUE<-data.frame(treatment="kite_control_diff",mean=mean(kite.statistics-control.statistics),
+                           lcl=quantile(kite.statistics-control.statistics,0.025),ucl=quantile(kite.statistics-control.statistics,0.975))
+NIGHT_DIFF_CPUE<-data.frame(treatment="night_control_diff",mean=mean(night.statistics-control.statistics),
+                            lcl=quantile(night.statistics-control.statistics,0.025),ucl=quantile(night.statistics-control.statistics,0.975))
+
+
+
+### quantifying differences in per cent
+KITE_DIFF_CPUE[,5:7]<-(KITE_DIFF_CPUE[,2:4]/CPUE_control[,2:4])*100
+NIGHT_DIFF_CPUE[,5:7]<-(NIGHT_DIFF_CPUE[,2:4]/CPUE_control[,2:4])*100
+
+
+
+### COMBINE NUMBERS FOR OUTPUT FILE
+
+DIFF_SUMMARY<-bind_rows(KITE_DIFF_BPUE,NIGHT_DIFF_BPUE,KITE_DIFF_CPUE,NIGHT_DIFF_CPUE) %>%
+  mutate(mean=mean*12322.71,lcl=lcl*12322.71,ucl=ucl*12322.71) %>%
+  rename(`prop.mean.diff(%)`=mean.1,`prop.lcl.diff(%)`=lcl.1,`prop.ucl.diff(%)`=ucl.1) %>%
+  rename(`abs.mean.diff(N)`=mean,`abs.lcl.diff(N)`=lcl,`abs.ucl.diff(N)`=ucl) %>%
+  mutate(Type=c(rep("LTDU bycatch",2),rep("Fish catch",2))) %>%
+  select(Type,treatment,everything())
+
+fwrite(DIFF_SUMMARY,"output/LIT_LTDU_mitigation_difference_summary.csv")
+
+
+
+### PLOT predicted OUTPUT FOR FISH AND SEABIRDS ###
+
+bind_rows(BPUE_control,BPUE_kite,BPUE_night,CPUE_control,CPUE_kite,CPUE_night) %>%
+  mutate(Type=c(rep("BPUE",3),rep("CPUE",3))) %>%
+  ggplot(aes(y=mean*12322.71, x=treatment, col=Type)) + geom_point(size=3)+
+  geom_errorbar(aes(ymin=lcl*12322.71, ymax=ucl*12322.71), width=.05)+
+  facet_wrap(~Type, ncol=1,scales="free_y",strip.position = "left", 
+             labeller = as_labeller(c(BPUE = "LTDU bycatch (N)", CPUE = "Fish catch (kg)") ) ) +
+  #scale_y_continuous(limits=c(0,0.5), breaks=seq(0,0.5,0.1)) +
+  xlab("") +
+  ylab("Catch per average set effort") +
+  theme(panel.background=element_rect(fill="white", colour="black"), 
+        axis.text=element_text(size=16, color="black"), 
+        axis.title=element_text(size=18), 
+        strip.text=element_text(size=18, color="black"),
+        legend.position="none",
+        strip.background = element_blank(),
+        strip.placement = "outside", 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank())
+
+ggsave("output/LIT_LTDU_bycatch_mitigation_summary.jpg", width=8, height=11)
     
 
 
