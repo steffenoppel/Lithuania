@@ -248,3 +248,38 @@ depthprops<-adorn_percentages(deptheffort,denominator = "col", na.rm = TRUE) %>%
   mutate(Proportion=ifelse(is.na(Proportion),0,Proportion*100)) %>%
   spread(key=Fishing_depth, value=Proportion)
 saveRDS(depthprops,"data/LIT_bycatch_depths.rds")
+
+
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+#####
+#####    SUMMARISE FISHING EFFORT AT DEPTH BY MITIGATION  ###   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+#####
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+
+trialdeptheffort<-analysisdata %>%
+  mutate(Trial_type_by_fishermen=if_else(Trial_type_by_fishermen=="Control2","Control",Trial_type_by_fishermen)) %>%
+  group_by(Fishing_depth,Trial_type_by_fishermen) %>%
+  summarise(effort=sum(Effort, na.rm=T)) %>%
+  spread(key=Trial_type_by_fishermen,value=effort, fill=0) %>%
+  arrange(Fishing_depth)
+
+### merge and show proportions in plot
+
+adorn_percentages(trialdeptheffort,denominator = "col", na.rm = TRUE) %>%
+  gather(key="Trial",value="PropEffort",-Fishing_depth) %>%
+  
+  ggplot(aes(y=PropEffort*100, x=Fishing_depth, col=Trial, fill=Trial)) +
+  geom_bar(position="dodge", stat="identity")+
+  xlab("Depth of fishing (m)") +
+  ylab("Proportion (%)") +
+  theme(axis.text=element_text(size=16, color="black"), 
+        axis.title=element_text(size=18), 
+        strip.text=element_text(size=18, color="black"),
+        legend.text=element_text(size=14, color="black"),
+        legend.title=element_text(size=18, color="black"),
+        legend.key=element_blank(),
+        legend.position=c(0.8,0.8), 
+        panel.border = element_blank())
+
+ggsave("output/LTU_depth_by_trial_effort.jpg", width=11, height=9)
+
