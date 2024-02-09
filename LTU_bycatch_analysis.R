@@ -48,15 +48,33 @@ dim(data)
 #####    BASIC COMPOSITIONAL ANALYSIS TO TEST WHETHER BYCATCH IS DEPTH-DEPENDENT ~~~~~~~~~~########
 #####
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+### THIS FUNCTION FREEZES IF N depths is > N species
+## https://stackoverflow.com/questions/50047339/adehabitat-compana-doesnt-work-or-returns-lambda-nan
+## bin depths into 5 m bins
+
 depthprops<-readRDS("data/LIT_bycatch_depths.rds")
-avail=depthprops %>% slice(rep(2, each = 8)) %>% select(-Type)
-used=depthprops[-2,] %>% select(-Type)
-adehabitatHS::compana(used=used,avail=avail,
-                      test = "parametric", rnv=0.0001)
+
+## bin depths
+depthprops<-depthprops %>%
+  gather(key='depth', value='prop',-Type) %>%
+  mutate(depth=as.numeric(depth)) %>%
+  mutate(depthcat=ifelse(depth<5,"shallow",ifelse(depth>9,"deep","intermediate"))) %>%
+  group_by(Type,depthcat) %>%
+  summarise(prop=sum(prop)) %>%
+  spread(key=depthcat,value=prop)
+
+avail=depthprops %>% ungroup() %>% slice(rep(2, each = 8)) %>% select(-Type)
+used=depthprops[-2,] %>% ungroup() %>% select(-Type)
+DA<-adehabitatHS::compana(used=used,avail=avail,
+                      test = "parametric", rnv=0.001, nrep=500)
+str(DA)
+
+## Eigenanalysis of selection ratios
+ii <- eisera(used=round(used), avail=avail, scannf = FALSE)
+scatter(ii, grid = FALSE, clab = 0.7)
 
 
-
-
+### fairly uninformative analysis - there is no 'selection' of bycatch to occur in certain water depths and effort in deep water was too low
 
 
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
