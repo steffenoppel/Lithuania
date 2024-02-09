@@ -9,6 +9,8 @@
 
 ## updated on 12 Jan 2024 after receiving new database
 
+## amended on 9 Feb 2024 to include depth and species info (on request of Yann Rouxel)
+
 
 ### Load libraries
 library(ggplot2)
@@ -19,8 +21,8 @@ library(readxl)
 library(lubridate)
 filter<-dplyr::filter
 select<-dplyr::select
-library(marmap)
-
+#library(marmap)
+library(janitor)
 
 
 
@@ -70,7 +72,7 @@ head(bycatch)
 ### calculate fishing effort per set
 effortsummary<-sets  %>%
   left_join(gear, by="Set_ID") %>%
-  select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season, Month,Depl_Date,Haul_Date, Total_net_area) %>%
+  select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season, Month,Depl_Date,Haul_Date, Total_net_area,Fishing_depth) %>%
   mutate(Hours_deployed=as.numeric(difftime(Haul_Date,Depl_Date, units="hours"))) %>%  ## this does not work because it cannot deal with numbers >23:59
   mutate(Hours_deployed=ifelse(is.na(Hours_deployed),12,Hours_deployed)) %>%    ## make up number for sets with no soak time
   mutate(Hours_deployed=ifelse(Hours_deployed==0,12,Hours_deployed)) %>%   ## make up number for sets with 0 soak time
@@ -97,6 +99,26 @@ totalbirdsummary<-bycatch  %>%
   group_by(Set_ID) %>%
   summarise(bycatch=sum(n, na.rm=T))
 
+birdsummary %>% group_by(Species) %>%
+  summarise(Total=sum(bycatch)) %>%
+  arrange(desc(Total)) %>%
+  mutate(Prop=adorn_percentages(.,denominator = "col", na.rm = TRUE)[,2])
+
+LTDUsummary<-bycatch  %>%
+  rename(Species=`Bird species`) %>%
+  filter(Species=="Clangula hyemalis") %>%
+  mutate(n=1) %>%
+  group_by(Set_ID) %>%
+  summarise(LTDUbycatch=sum(n, na.rm=T))
+
+seaducksummary<-bycatch  %>%
+  rename(Species=`Bird species`) %>%
+  filter(Species %in% c("Clangula hyemalis","Melanitta fusca","Melanitta nigra")) %>%
+  mutate(n=1) %>%
+  group_by(Set_ID) %>%
+  summarise(seaduckbycatch=sum(n, na.rm=T))
+
+
 
 #### COMBINE SUMMARIES TO CALCULATE CPUE AND BPUE
 alldata<-effortsummary %>%
@@ -104,12 +126,16 @@ alldata<-effortsummary %>%
   mutate(catch=ifelse(is.na(catch),0,catch)) %>% ## fill in the 0 for sets with no fish catch
   left_join(totalbirdsummary, by="Set_ID") %>%
   mutate(bycatch=ifelse(is.na(bycatch),0,bycatch)) %>% ## fill in the 0 for sets with no bird bycatch
-  mutate(CPUE=catch/Effort, BPUE=bycatch/Effort)
+  left_join(LTDUsummary, by="Set_ID") %>%
+  mutate(LTDUbycatch=ifelse(is.na(LTDUbycatch),0,LTDUbycatch)) %>% ## fill in the 0 for sets with no bird bycatch
+  left_join(seaducksummary, by="Set_ID") %>%
+  mutate(seaduckbycatch=ifelse(is.na(seaduckbycatch),0,seaduckbycatch)) %>% ## fill in the 0 for sets with no bird bycatch
+  mutate(CPUE=catch/Effort, BPUE=bycatch/Effort, LTBPUE=LTDUbycatch/Effort, SDBPUE=seaduckbycatch/Effort)
 head(alldata)
 
 #### SAVE DATA FOR ANALYSIS
 analysisdata<-alldata %>%
-  select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season,Month,Total_net_area, Hours_deployed, Effort, catch,bycatch, CPUE, BPUE) %>%
+  select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season,Month,Total_net_area, Hours_deployed, Fishing_depth,Effort, catch,bycatch, CPUE, BPUE,LTBPUE,SDBPUE) %>%
   left_join(sets[,c(2,4,30)], by="Set_ID")
 saveRDS(analysisdata,"data/LIT_bycatch_data_formatted.rds")
 
@@ -161,3 +187,48 @@ alldata %>%
         panel.border = element_blank())
 
 ggsave("output/LTU_raw_bycatch_data.jpg", width=11, height=9)
+
+
+
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+#####
+#####    SUMMARISE BYCATCH AT DEPTH DATA  ###   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+#####
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+hist(sets$Fishing_depth)
+
+deptheffort<-analysisdata %>%
+  group_by(Fishing_depth) %>%
+  summarise(effort=sum(Effort, na.rm=T)) %>%
+  arrange(Fishing_depth)
+
+depthbycatch<-bycatch  %>%
+  mutate(n=1) %>%
+  group_by(Depth) %>%
+  summarise(bycatch=sum(n, na.rm=T)) %>%
+  rename(Fishing_depth=Depth) %>%
+  arrange(Fishing_depth)
+
+
+### merge and show proportions in plot
+
+adorn_percentages(deptheffort,denominator = "col", na.rm = TRUE) %>%
+  left_join(adorn_percentages(depthbycatch,denominator = "col", na.rm = TRUE), by="Fishing_depth") %>%
+  mutate(bycatch=ifelse(is.na(bycatch),0,bycatch)) %>%
+  gather(key="Type",value="Proportion",-Fishing_depth) %>%
+  
+  ggplot(aes(y=Proportion*100, x=Fishing_depth, col=Type, fill=Type)) +
+  geom_bar(position="dodge", stat="identity")+
+  xlab("Depth of fishing (m)") +
+  ylab("Proportion (%)") +
+  theme(axis.text=element_text(size=16, color="black"), 
+        axis.title=element_text(size=18), 
+        strip.text=element_text(size=18, color="black"),
+        legend.text=element_text(size=14, color="black"),
+        legend.title=element_text(size=18, color="black"),
+        legend.key=element_blank(),
+        legend.position=c(0.8,0.8), 
+        panel.border = element_blank())
+
+ggsave("output/LTU_depth_bycatch_effort.jpg", width=11, height=9)
+
