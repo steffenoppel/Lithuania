@@ -232,3 +232,19 @@ adorn_percentages(deptheffort,denominator = "col", na.rm = TRUE) %>%
 
 ggsave("output/LTU_depth_bycatch_effort.jpg", width=11, height=9)
 
+## prepare data for analysis
+depthbycatch<-bycatch  %>%
+  rename(Species=`Bird species`) %>%
+  mutate(n=1) %>%
+  group_by(Depth,Species) %>%
+  summarise(bycatch=sum(n, na.rm=T)) %>%
+  rename(Fishing_depth=Depth) %>%
+  arrange(Fishing_depth) %>%
+  spread(key=Species, value=bycatch, fill=0)
+
+depthprops<-adorn_percentages(deptheffort,denominator = "col", na.rm = TRUE) %>%
+  left_join(adorn_percentages(depthbycatch,denominator = "col", na.rm = TRUE), by="Fishing_depth") %>%
+  gather(key="Type",value="Proportion",-Fishing_depth) %>%
+  mutate(Proportion=ifelse(is.na(Proportion),0,Proportion*100)) %>%
+  spread(key=Fishing_depth, value=Proportion)
+saveRDS(depthprops,"data/LIT_bycatch_depths.rds")

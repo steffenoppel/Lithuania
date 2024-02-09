@@ -8,12 +8,17 @@
 ## major complication is that some sets declared as 'night' fishing straddle daytime
 ## these are specified in Adj_trial_types and Adj_trial subtypes
 
+## 9 Feb 2024: added a compositional analysis to test whether bycatch depth distribution and effort are significantly different
+## 9 Feb 2024: added species-specific analyses
+
+
 ### Load libraries
 library(ggplot2)
 library(data.table)
 library(tidyverse)
 library(stringr)
 library(lubridate)
+library(adehabitatHS)
 filter<-dplyr::filter
 select<-dplyr::select
 
@@ -34,6 +39,21 @@ try(setwd("C:\\STEFFEN\\OneDrive - THE ROYAL SOCIETY FOR THE PROTECTION OF BIRDS
 data<-readRDS("data/LIT_bycatch_data_formatted.rds")
 head(data)
 dim(data)
+
+
+
+
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+#####
+#####    BASIC COMPOSITIONAL ANALYSIS TO TEST WHETHER BYCATCH IS DEPTH-DEPENDENT ~~~~~~~~~~########
+#####
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+depthprops<-readRDS("data/LIT_bycatch_depths.rds")
+avail=depthprops %>% slice(rep(2, each = 8)) %>% select(-Type)
+used=depthprops[-2,] %>% select(-Type)
+adehabitatHS::compana(used=used,avail=avail,
+                      test = "parametric", rnv=0.0001)
+
 
 
 
