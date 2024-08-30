@@ -11,6 +11,8 @@
 
 ## amended on 9 Feb 2024 to include depth and species info (on request of Yann Rouxel)
 
+## updated on 30 August 2024 after receiving final data from Rasa Morkune
+
 
 ### Load libraries
 library(ggplot2)
@@ -36,11 +38,11 @@ try(setwd("C:\\STEFFEN\\RSPB\\Marine\\Bycatch\\GillnetBycatch\\Analysis\\Lithuan
 try(setwd("C:\\STEFFEN\\OneDrive - THE ROYAL SOCIETY FOR THE PROTECTION OF BIRDS\\STEFFEN\\RSPB\\Marine\\Bycatch\\GillnetBycatch\\Analysis\\Lithuania"), silent=T)
 
 # Read the data from sheets in Excel file - stripping Lithuanian header in second row
-tripcols <- as.character(read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_trip", n_max = 1, col_names = FALSE))
-trips <- read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_trip", skip=3, col_names = tripcols)
+tripcols <- as.character(read_excel("data/2019-2024 all trials final table.xlsx", sheet="tbl_trip", n_max = 1, col_names = FALSE))
+trips <- read_excel("data/2019-2024 all trials final table.xlsx", sheet="tbl_trip", skip=3, col_names = tripcols)
 head(trips)
-setcols <- as.character(read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_set", n_max = 1, col_names = FALSE))
-sets <- read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_set", skip=3, col_names = setcols[1:33])
+setcols <- as.character(read_excel("data/2019-2024 all trials final table.xlsx", sheet="tbl_set", n_max = 1, col_names = FALSE))
+sets <- read_excel("data/2019-2024 all trials final table.xlsx", sheet="tbl_set", skip=3, col_names = setcols[1:33])
 
 ## combine date and time into a single field
 hour(sets$Depl_Date)<-ifelse(is.na(sets$Depl_Time),12,hour(sets$Depl_Time))
@@ -48,16 +50,16 @@ minute(sets$Depl_Date)<-ifelse(is.na(sets$Depl_Time),0,minute(sets$Depl_Time))
 hour(sets$Haul_Date)<-ifelse(is.na(sets$Haul_time),12,hour(sets$Haul_time))
 minute(sets$Haul_Date)<-ifelse(is.na(sets$Haul_time),0,minute(sets$Haul_time))
 head(sets)
-gearcols <- as.character(read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_gear", n_max = 1, col_names = FALSE))
-gear <- read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_gear", skip=3, col_names = gearcols[1:9])
+gearcols <- as.character(read_excel("data/2019-2024 all trials final table.xlsx", sheet="tbl_gear", n_max = 1, col_names = FALSE))
+gear <- read_excel("data/2019-2024 all trials final table.xlsx", sheet="tbl_gear", skip=3, col_names = gearcols[1:9])
 head(gear)
 
 # Read the data from sheets in Excel file - stripping Lithuanian header in first row
-fishcols <- as.character(read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_fish", n_max = 1, col_names = FALSE))
-fish <- read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_fish", skip=3, col_names = c(fishcols,"ignore"))
+fishcols <- as.character(read_excel("data/2019-2024 all trials final table.xlsx", sheet="tbl_fish", n_max = 1, col_names = FALSE))
+fish <- read_excel("data/2019-2024 all trials final table.xlsx", sheet="tbl_fish", skip=3, col_names = c(fishcols,"ignore"))
 head(fish)
-bycatchcols <- as.character(read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_bycatch", n_max = 1, col_names = FALSE))
-bycatch <- read_excel("data/trial analysis 2019-2023 version v3 (upd).xlsx", sheet="tbl_bycatch", skip=2, col_names = bycatchcols)
+bycatchcols <- as.character(read_excel("data/2019-2024 all trials final table.xlsx", sheet="tbl_bycatch", n_max = 1, col_names = FALSE))
+bycatch <- read_excel("data/2019-2024 all trials final table.xlsx", sheet="tbl_bycatch", skip=2, col_names = bycatchcols)
 head(bycatch)
 
 

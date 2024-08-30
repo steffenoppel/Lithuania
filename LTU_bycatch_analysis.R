@@ -11,6 +11,8 @@
 ## 9 Feb 2024: added a compositional analysis to test whether bycatch depth distribution and effort are significantly different
 ## 9 Feb 2024: added species-specific analyses
 
+## re-run on 30 August 2024 after receiving final data from Rasa Morkune
+
 
 ### Load libraries
 library(ggplot2)
