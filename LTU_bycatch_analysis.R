@@ -30,7 +30,7 @@ select<-dplyr::select
 
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 #####
-#####     DATA IMPORT AND MANIPULATION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+#####     DATA IMPORT AND MANIPULATION -------------------------
 #####
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 
@@ -41,13 +41,13 @@ try(setwd("C:\\STEFFEN\\OneDrive - THE ROYAL SOCIETY FOR THE PROTECTION OF BIRDS
 data<-readRDS("data/LIT_bycatch_data_formatted.rds")
 head(data)
 dim(data)
-
-
+unique(data$Season)
+length(unique(data$Trip_ID))
 
 
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 #####
-#####    BASIC COMPOSITIONAL ANALYSIS TO TEST WHETHER BYCATCH IS DEPTH-DEPENDENT ~~~~~~~~~~########
+#####    BASIC COMPOSITIONAL ANALYSIS TO TEST WHETHER BYCATCH IS DEPTH-DEPENDENT -----------------
 #####
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 ### THIS FUNCTION FREEZES IF N depths is > N species
@@ -81,7 +81,7 @@ scatter(ii, grid = FALSE, clab = 0.7)
 
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 #####
-#####    BASIC BOOTSTRAP ANALYSIS COMPARING BPUE AND CPUE GLOBALLY ~~~~~~~~~~~~~~~~~~~~~~~~########
+#####    BASIC BOOTSTRAP ANALYSIS COMPARING BPUE AND CPUE GLOBALLY -------------------------------
 #####
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 
@@ -197,7 +197,7 @@ ggsave("output/LIT_bycatch_mitigation_summary.jpg", width=8, height=11)
 
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 #####
-#####    BASIC BOOTSTRAP ANALYSIS COMPARING BPUE AND CPUE FOR SEADUCKS ~~~~~~~~~~~~~~~~~~~~########
+#####    BASIC BOOTSTRAP ANALYSIS COMPARING BPUE AND CPUE FOR SEADUCKS ----------------------------
 #####
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 
@@ -312,7 +312,7 @@ ggsave("output/LIT_seaduck_bycatch_mitigation_summary.jpg", width=8, height=11)
 
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 #####
-#####    BASIC BOOTSTRAP ANALYSIS COMPARING BPUE AND CPUE GLOBALLY ~~~~~~~~~~~~~~~~~~~~~~~~########
+#####    BASIC BOOTSTRAP ANALYSIS COMPARING BPUE AND CPUE FOR LONG TAILED DUCKs ----------
 #####
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 
