@@ -161,7 +161,7 @@ head(alldata)
 #### SAVE DATA FOR ANALYSIS
 analysisdata<-alldata %>%
   select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season,Month,Total_net_area, Hours_deployed, Fishing_depth,Effort, catch,bycatch, CPUE, BPUE,LTBPUE,SDBPUE,,SStrip,TLtrip,TrialType3hSS,TrialType2hSS,daylightTripoverlap,twilightTripoverlap) %>%
-  left_join(sets[,c(2,4,30)], by="Set_ID")
+  left_join(sets[,c(2,30)], by="Set_ID")
 saveRDS(analysisdata,"data/LIT_bycatch_data_formatted.rds")
 
 
