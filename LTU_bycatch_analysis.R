@@ -87,10 +87,14 @@ scatter(ii, grid = FALSE, clab = 0.7)
 #####
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 
+### SWITCHED TO TrialType2hSS
 
-controls<- data %>% filter(Trial_type_by_fishermen=="Control") 
-kites<- data %>% filter(Trial_type_by_fishermen=="Kites")
-nights<- data %>% filter(Trial_type_by_fishermen=="Night")
+# controls<- data %>% filter(Trial_type_by_fishermen=="Control") 
+# kites<- data %>% filter(Trial_type_by_fishermen=="Kites")
+# nights<- data %>% filter(Trial_type_by_fishermen=="Night")
+controls<- data %>% filter(TrialType2hSS=="Control") %>% filter(Trial_type_by_fishermen!="Kites")
+kites<- data %>% filter(TrialType2hSS=="Control") %>% filter(Trial_type_by_fishermen=="Kites")
+nights<- data %>% filter(TrialType2hSS=="Night")
 
 
 ## bootstrapping the BPUE samples (10000 random draws)
@@ -167,7 +171,7 @@ DIFF_SUMMARY<-bind_rows(KITE_DIFF_BPUE,NIGHT_DIFF_BPUE,KITE_DIFF_CPUE,NIGHT_DIFF
   mutate(Type=c(rep("Seabird bycatch",2),rep("Fish catch",2))) %>%
   select(Type,treatment,everything())
 
-fwrite(DIFF_SUMMARY,"output/LIT_mitigation_difference_summary.csv")
+fwrite(DIFF_SUMMARY,"output/LIT_mitigation_difference_summary_2hSSnight.csv")
 
 
 
@@ -193,7 +197,7 @@ bind_rows(BPUE_control,BPUE_kite,BPUE_night,CPUE_control,CPUE_kite,CPUE_night) %
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
 
-ggsave("output/LIT_bycatch_mitigation_summary.jpg", width=8, height=11)
+ggsave("output/LIT_bycatch_mitigation_summary_2hSSnight.jpg", width=8, height=11)
 
 
 
@@ -204,9 +208,14 @@ ggsave("output/LIT_bycatch_mitigation_summary.jpg", width=8, height=11)
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 
 
-controls<- data %>% filter(Trial_type_by_fishermen=="Control") 
-kites<- data %>% filter(Trial_type_by_fishermen=="Kites")
-nights<- data %>% filter(Trial_type_by_fishermen=="Night")
+### SWITCHED TO TrialType2hSS
+
+# controls<- data %>% filter(Trial_type_by_fishermen=="Control") 
+# kites<- data %>% filter(Trial_type_by_fishermen=="Kites")
+# nights<- data %>% filter(Trial_type_by_fishermen=="Night")
+controls<- data %>% filter(TrialType2hSS=="Control") %>% filter(Trial_type_by_fishermen!="Kites")
+kites<- data %>% filter(TrialType2hSS=="Control") %>% filter(Trial_type_by_fishermen=="Kites")
+nights<- data %>% filter(TrialType2hSS=="Night")
 
 
 ## bootstrapping the BPUE samples (10000 random draws)
@@ -283,7 +292,7 @@ DIFF_SUMMARY<-bind_rows(KITE_DIFF_BPUE,NIGHT_DIFF_BPUE,KITE_DIFF_CPUE,NIGHT_DIFF
   mutate(Type=c(rep("seaduck bycatch",2),rep("Fish catch",2))) %>%
   select(Type,treatment,everything())
 
-fwrite(DIFF_SUMMARY,"output/LIT_seaduck_mitigation_difference_summary.csv")
+fwrite(DIFF_SUMMARY,"output/LIT_seaduck_mitigation_difference_summary_2hSS.csv")
 
 
 
@@ -309,7 +318,7 @@ bind_rows(BPUE_control,BPUE_kite,BPUE_night,CPUE_control,CPUE_kite,CPUE_night) %
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
 
-ggsave("output/LIT_seaduck_bycatch_mitigation_summary.jpg", width=8, height=11)
+ggsave("output/LIT_seaduck_bycatch_mitigation_summary_2hSS.jpg", width=8, height=11)
 
 
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
@@ -319,9 +328,14 @@ ggsave("output/LIT_seaduck_bycatch_mitigation_summary.jpg", width=8, height=11)
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 
 
-controls<- data %>% filter(Trial_type_by_fishermen=="Control") 
-kites<- data %>% filter(Trial_type_by_fishermen=="Kites")
-nights<- data %>% filter(Trial_type_by_fishermen=="Night")
+### SWITCHED TO TrialType2hSS
+
+# controls<- data %>% filter(Trial_type_by_fishermen=="Control") 
+# kites<- data %>% filter(Trial_type_by_fishermen=="Kites")
+# nights<- data %>% filter(Trial_type_by_fishermen=="Night")
+controls<- data %>% filter(TrialType2hSS=="Control") %>% filter(Trial_type_by_fishermen!="Kites")
+kites<- data %>% filter(TrialType2hSS=="Control") %>% filter(Trial_type_by_fishermen=="Kites")
+nights<- data %>% filter(TrialType2hSS=="Night")
 
 
 ## bootstrapping the BPUE samples (10000 random draws)
@@ -398,7 +412,7 @@ DIFF_SUMMARY<-bind_rows(KITE_DIFF_BPUE,NIGHT_DIFF_BPUE,KITE_DIFF_CPUE,NIGHT_DIFF
   mutate(Type=c(rep("LTDU bycatch",2),rep("Fish catch",2))) %>%
   select(Type,treatment,everything())
 
-fwrite(DIFF_SUMMARY,"output/LIT_LTDU_mitigation_difference_summary.csv")
+fwrite(DIFF_SUMMARY,"output/LIT_LTDU_mitigation_difference_summary_2hSS.csv")
 
 
 
@@ -424,7 +438,7 @@ bind_rows(BPUE_control,BPUE_kite,BPUE_night,CPUE_control,CPUE_kite,CPUE_night) %
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
 
-ggsave("output/LIT_LTDU_bycatch_mitigation_summary.jpg", width=8, height=11)
+ggsave("output/LIT_LTDU_bycatch_mitigation_summary_2hSS.jpg", width=8, height=11)
     
 
 
