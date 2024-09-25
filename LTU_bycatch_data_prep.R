@@ -69,9 +69,13 @@ sets <- sets %>%
          deplNDdiff=as.numeric(difftime(nauticalDusk, Depl_Date, unit="hours")), haulNDdiff=as.numeric(difftime(Haul_Date, nauticalDawn, unit="hours"))) %>%
   rowwise() %>%
   mutate(daylightTripoverlap=max(deplSSdiff,haulSRdiff, na.rm=T), twilightTripoverlap=max(deplNDdiff,haulNDdiff, na.rm=T)) %>%
-  mutate(SStrip=ifelse(daylightTripoverlap<0,"Night",Trial_type_by_fishermen)) %>%  ## this could be adjusted to use 1 or 2 hr tolerance to allow fishing within 1-2 hrs of sunset
-  mutate(TLtrip=ifelse(twilightTripoverlap<0,"Night",Trial_type_by_fishermen))   ## this could be adjusted to use 1 or 2 hr tolerance to allow fishing within 1-2 hrs of twilight
-sets %>% select(Trial_type_by_fishermen,TrialType2hSS,daylightTripoverlap,SStrip,deplSSdiff,haulSRdiff,Depl_Date,sunset,Haul_Date,sunrise)
+  ungroup() %>%
+  mutate(SStrip=ifelse(daylightTripoverlap<0,"Night",ifelse(Trial_type_by_fishermen=="Night","Control",Trial_type_by_fishermen))) %>%  ## this could be adjusted to use 1 or 2 hr tolerance to allow fishing within 1-2 hrs of sunset
+  mutate(TLtrip=ifelse(twilightTripoverlap<0,"Night",ifelse(Trial_type_by_fishermen=="Night","Control",Trial_type_by_fishermen)))   ## this could be adjusted to use 1 or 2 hr tolerance to allow fishing within 1-2 hrs of twilight
+## inspect erroneous assignments
+sets %>%
+  dplyr::select(Trial_type_by_fishermen,TrialType3hSS,daylightTripoverlap,SStrip,deplSSdiff,haulSRdiff,Depl_Date,sunset,Haul_Date,sunrise) %>%
+  dplyr::filter(SStrip=="Night" & TrialType3hSS!="Night") 
 
 # Read the data from sheets in Excel file - stripping Lithuanian header in first row
 fishcols <- as.character(read_excel("data/2019-2024 all trials final table.xlsx", sheet="tbl_fish", n_max = 1, col_names = FALSE))
