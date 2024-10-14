@@ -59,12 +59,13 @@ gear <- read_excel("data/2019-2024 all trials final table.xlsx", sheet="tbl_gear
 head(gear)
 
 ## calculate sunset and sunrise times for setting and hauling and calculate difference between sunset and deployment (and sunrise and haul)
-sets$sunset<-suncalc::getSunlightTimes(date=as.Date(sets$Depl_Date),lat=55.737232,lon=20.988563,keep="sunset")$sunset
-sets$sunrise<-suncalc::getSunlightTimes(date=as.Date(sets$Haul_Date),lat=55.737232,lon=20.988563,keep="sunrise")$sunrise
-sets$nauticalDusk<-suncalc::getSunlightTimes(date=as.Date(sets$Depl_Date),lat=55.737232,lon=20.988563,keep="nauticalDusk")$nauticalDusk
-sets$nauticalDawn<-suncalc::getSunlightTimes(date=as.Date(sets$Haul_Date),lat=55.737232,lon=20.988563,keep="nauticalDawn")$nauticalDawn
+sets$sunset<-suncalc::getSunlightTimes(date=as.Date(sets$Depl_Date),lat=55.737232,lon=20.988563,keep="sunset", tz="EET")$sunset
+sets$sunrise<-suncalc::getSunlightTimes(date=as.Date(sets$Haul_Date),lat=55.737232,lon=20.988563,keep="sunrise", tz="EET")$sunrise
+sets$nauticalDusk<-suncalc::getSunlightTimes(date=as.Date(sets$Depl_Date),lat=55.737232,lon=20.988563,keep="nauticalDusk", tz="EET")$nauticalDusk
+sets$nauticalDawn<-suncalc::getSunlightTimes(date=as.Date(sets$Haul_Date),lat=55.737232,lon=20.988563,keep="nauticalDawn", tz="EET")$nauticalDawn
 
 sets <- sets %>%
+  mutate(Depl_Date=force_tz(Depl_Date, tz="EET"), Haul_Date=force_tz(Haul_Date, tz="EET")) %>%
   mutate(deplSSdiff=as.numeric(difftime(sunset, Depl_Date, unit="hours")), haulSRdiff=as.numeric(difftime(Haul_Date, sunrise, unit="hours")),
          deplNDdiff=as.numeric(difftime(nauticalDusk, Depl_Date, unit="hours")), haulNDdiff=as.numeric(difftime(Haul_Date, nauticalDawn, unit="hours"))) %>%
   rowwise() %>%
