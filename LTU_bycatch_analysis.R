@@ -223,7 +223,7 @@ bind_rows(BPUE_control,BPUE_kite,BPUE_night,BPUE_nightkite,CPUE_control,CPUE_kit
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
 
-ggsave("output/LIT_bycatch_mitigation_summary_2hSSnight.jpg", width=8, height=11)
+ggsave("output/LIT_bycatch_mitigation_summary_2hSSnight.jpg", width=11, height=9)
 
 
 
@@ -382,7 +382,7 @@ SCEN_ABS<-SCEN_ABS %>% left_join(scenarios, by="Scenario")
 ### SUMMARISE THE SEABIRD BYCATCH DIFFERENCES IN A PLOT ###
 
 SCEN_DIFFS %>%
-  filter(n>25) %>%
+  filter(n>15) %>%
   #mutate(mean.1=ifelse(mean.1<(-100),-100,mean.1)) %>%
   mutate(lcl.1=ifelse(lcl.1<-100,-100,lcl.1)) %>%
   mutate(ucl.1=ifelse(ucl.1>200,200,ucl.1)) %>%
@@ -402,7 +402,7 @@ SCEN_DIFFS %>%
        x="Experimental treatment",
        y="% change in seabird bycatch") +
   theme(panel.background=element_rect(fill="white", colour="black"), 
-        axis.text=element_text(size=16, color="black"), 
+        axis.text=element_text(size=14, color="black"), 
         axis.title=element_text(size=18), 
         strip.text=element_text(size=18, color="black"),
         title=element_text(size=18),
@@ -413,7 +413,7 @@ SCEN_DIFFS %>%
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
 
-ggsave("output/LIT_relative_bycatch_mitigation_25scenarios.jpg", width=8, height=11)
+ggsave("output/LIT_relative_bycatch_mitigation_25scenarios.jpg", width=11, height=9)
 
 
 
@@ -436,7 +436,7 @@ SCEN_DIFFS %>%
        x="Experimental treatment",
        y="% change in absolute fish catch") +
   theme(panel.background=element_rect(fill="white", colour="black"), 
-        axis.text=element_text(size=16, color="black"), 
+        axis.text=element_text(size=14, color="black"), 
         axis.title=element_text(size=18), 
         strip.text=element_text(size=18, color="black"),
         title=element_text(size=18),
@@ -447,7 +447,7 @@ SCEN_DIFFS %>%
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
 
-ggsave("output/LIT_relative_fishcatch_mitigation_25scenarios.jpg", width=8, height=11)
+ggsave("output/LIT_relative_fishcatch_mitigation_25scenarios.jpg", width=11, height=9)
 
 
 
@@ -455,7 +455,7 @@ ggsave("output/LIT_relative_fishcatch_mitigation_25scenarios.jpg", width=8, heig
 ### SUMMARISE THE ABSOLUTE BYCATCH RATES IN A PLOT ###
 
 SCEN_ABS %>%
-  filter(n>50) %>%
+  filter(n>15) %>%
   filter(Type=="Seabird bycatch") %>%
   ggplot(aes(y=mean, x=treatment, label=n)) +
   geom_point(size=3)+
@@ -478,14 +478,14 @@ SCEN_ABS %>%
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
 
-ggsave("output/LIT_bycatch_means_25scenarios.jpg", width=8, height=11)
+ggsave("output/LIT_bycatch_means_25scenarios.jpg", width=11, height=9)
 
 
 
 ### SUMMARISE THE ABSOLUTE FISH CATCH RATES IN A PLOT ###
 
 SCEN_ABS %>%
-  filter(n>50) %>%
+  filter(n>15) %>%
   filter(Type=="Fish catch") %>%
   ggplot(aes(y=mean, x=treatment, label=n)) +
   geom_point(size=3)+
@@ -508,7 +508,7 @@ SCEN_ABS %>%
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
 
-ggsave("output/LIT_fishcatch_means_25scenarios.jpg", width=8, height=11)
+ggsave("output/LIT_fishcatch_means_25scenarios.jpg", width=11, height=9)
 
 
 
