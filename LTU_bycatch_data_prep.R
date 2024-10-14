@@ -97,7 +97,7 @@ head(bycatch)
 ### calculate fishing effort per set
 effortsummary<-sets  %>%
   left_join(gear, by="Set_ID") %>%
-  select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season, Month,Depl_Date,Haul_Date, Total_net_area,Fishing_depth,SStrip,TLtrip,TrialType3hSS,TrialType2hSS,daylightTripoverlap,twilightTripoverlap) %>%
+  select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season, Month,Depl_Date,Haul_Date, Total_net_area,Fishing_depth,SStrip,TLtrip,TrialType3hSS,TrialType2hSS,daylightTripoverlap,twilightTripoverlap,deplSSdiff, haulSRdiff) %>%
   mutate(Hours_deployed=as.numeric(difftime(Haul_Date,Depl_Date, units="hours"))) %>%  ## this does not work because it cannot deal with numbers >23:59
   mutate(Hours_deployed=ifelse(is.na(Hours_deployed),12,Hours_deployed)) %>%    ## make up number for sets with no soak time
   mutate(Hours_deployed=ifelse(Hours_deployed==0,12,Hours_deployed)) %>%   ## make up number for sets with 0 soak time
@@ -160,7 +160,7 @@ head(alldata)
 
 #### SAVE DATA FOR ANALYSIS
 analysisdata<-alldata %>%
-  select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season,Month,Total_net_area, Hours_deployed, Fishing_depth,Effort, catch,bycatch, CPUE, BPUE,LTBPUE,SDBPUE,,SStrip,TLtrip,TrialType3hSS,TrialType2hSS,daylightTripoverlap,twilightTripoverlap) %>%
+  select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season,Month,Total_net_area, Hours_deployed, Fishing_depth,Effort, catch,bycatch, CPUE, BPUE,LTBPUE,SDBPUE,,SStrip,TLtrip,TrialType3hSS,TrialType2hSS,daylightTripoverlap,twilightTripoverlap,deplSSdiff,haulSRdiff) %>%
   left_join(sets[,c(2,30)], by="Set_ID")
 saveRDS(analysisdata,"data/LIT_bycatch_data_formatted.rds")
 
