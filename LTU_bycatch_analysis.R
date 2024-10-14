@@ -89,7 +89,11 @@ scatter(ii, grid = FALSE, clab = 0.7)
 #####
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
 
-### SWITCHED TO TrialType2hSS
+### because fish catch should be compared irrespective of time, we recalculate CPUE
+data <- data %>%
+  mutate(CPUE=catch/Total_net_area)  ## not taking soak time into account because that is subject to experimental manipulation
+
+### SINGLE ANALYSIS FOR MANUALLY ANNOTATED TrialType2hSS
 ## added nightkite category on 14 Oct 2024
 
 # controls<- data %>% filter(Trial_type_by_fishermen=="Control") 
@@ -182,10 +186,12 @@ NIGHTKITE_DIFF_CPUE[,5:7]<-(NIGHTKITE_DIFF_CPUE[,2:4]/CPUE_control[,2:4])*100
 ### COMBINE NUMBERS FOR OUTPUT FILE
 
 DIFF_SUMMARY<-bind_rows(KITE_DIFF_BPUE,NIGHT_DIFF_BPUE,NIGHTKITE_DIFF_BPUE, KITE_DIFF_CPUE,NIGHT_DIFF_CPUE,NIGHTKITE_DIFF_CPUE) %>%
-  mutate(mean=mean*12322.71,lcl=lcl*12322.71,ucl=ucl*12322.71) %>%
+  mutate(Type=c(rep("Seabird bycatch",3),rep("Fish catch",3))) %>%
+  mutate(mean=ifelse(Type=="Seabird bycatch",mean*12322.71,mean*670),
+         lcl=ifelse(Type=="Seabird bycatch",lcl*12322.71,lcl*670),
+         ucl=ifelse(Type=="Seabird bycatch",ucl*12322.71,ucl*670)) %>%
   rename(`prop.mean.diff(%)`=mean.1,`prop.lcl.diff(%)`=lcl.1,`prop.ucl.diff(%)`=ucl.1) %>%
   rename(`abs.mean.diff(N)`=mean,`abs.lcl.diff(N)`=lcl,`abs.ucl.diff(N)`=ucl) %>%
-  mutate(Type=c(rep("Seabird bycatch",3),rep("Fish catch",3))) %>%
   select(Type,treatment,everything())
 
 fwrite(DIFF_SUMMARY,"output/LIT_mitigation_difference_summary_2hSSnight.csv")
@@ -196,8 +202,11 @@ fwrite(DIFF_SUMMARY,"output/LIT_mitigation_difference_summary_2hSSnight.csv")
 
 bind_rows(BPUE_control,BPUE_kite,BPUE_night,BPUE_nightkite,CPUE_control,CPUE_kite,CPUE_night,CPUE_nightkite) %>%
   mutate(Type=c(rep("BPUE",4),rep("CPUE",4))) %>%
-  ggplot(aes(y=mean*12322.71, x=treatment, col=Type)) + geom_point(size=3)+
-  geom_errorbar(aes(ymin=lcl*12322.71, ymax=ucl*12322.71), width=.05)+
+  mutate(mean=ifelse(Type=="BPUE",mean*12322.71,mean*670),
+         lcl=ifelse(Type=="BPUE",lcl*12322.71,lcl*670),
+         ucl=ifelse(Type=="BPUE",ucl*12322.71,ucl*670)) %>%
+  ggplot(aes(y=mean, x=treatment, col=Type)) + geom_point(size=3)+
+  geom_errorbar(aes(ymin=lcl, ymax=ucl), width=.05)+
   facet_wrap(~Type, ncol=1,scales="free_y",strip.position = "left", 
              labeller = as_labeller(c(BPUE = "Seabird bycatch (N)", CPUE = "Fish catch (kg)") ) ) +
   #scale_y_continuous(limits=c(0,0.5), breaks=seq(0,0.5,0.1)) +
@@ -242,6 +251,7 @@ scenarios<-expand.grid(deplSSdiff=SSdiffs,haulSRdiff=SRdiffs) %>%
 
 
 SCEN_DIFFS<-tibble()
+SCEN_ABS<-tibble()
 
 for(s in scenarios$Scenario) {
   
@@ -305,17 +315,17 @@ CPUE_control<-data.frame(treatment="control",mean=mean(control.statistics),
 kite.samples <- matrix(sample(kites$CPUE, size = 10000 * nrow(kites), replace = TRUE),10000, nrow(kites))
 kite.statistics <- apply(kite.samples, 1, mean)
 CPUE_kite<-data.frame(treatment="kite",mean=mean(kite.statistics),
-                      lcl=quantile(kite.statistics,0.025),ucl=quantile(kite.statistics,0.975), nrow(nights),n=dim(kites)[1])
+                      lcl=quantile(kite.statistics,0.025),ucl=quantile(kite.statistics,0.975), n=dim(kites)[1])
 
 night.samples <- matrix(sample(nights$CPUE, size = 10000 * nrow(nights), replace = TRUE),10000)
 night.statistics <- apply(night.samples, 1, mean)
 CPUE_night<-data.frame(treatment="night",mean=mean(night.statistics),
-                       lcl=quantile(night.statistics,0.025),ucl=quantile(night.statistics,0.975), nrow(nights),n=dim(nights)[1])
+                       lcl=quantile(night.statistics,0.025),ucl=quantile(night.statistics,0.975), n=dim(nights)[1])
 
 nightkite.samples <- matrix(sample(nightkites$CPUE, size = 10000 * nrow(nightkites), replace = TRUE),10000)
 nightkite.statistics <- apply(nightkite.samples, 1, mean)
 CPUE_nightkite<-data.frame(treatment="night_kite",mean=mean(nightkite.statistics),
-                           lcl=quantile(nightkite.statistics,0.025),ucl=quantile(nightkite.statistics,0.975), nrow(nights),n=dim(nightkites)[1])
+                           lcl=quantile(nightkite.statistics,0.025),ucl=quantile(nightkite.statistics,0.975), n=dim(nightkites)[1])
 
 
 ### calculating the CPUE differences
@@ -336,44 +346,66 @@ NIGHTKITE_DIFF_CPUE[,5:7]<-(NIGHTKITE_DIFF_CPUE[,2:4]/CPUE_control[,2:4])*100
 
 
 
-### COMBINE NUMBERS FOR OUTPUT FILE
-
-DIFF_SUMMARY<-bind_rows(KITE_DIFF_BPUE,NIGHT_DIFF_BPUE,NIGHTKITE_DIFF_BPUE, KITE_DIFF_CPUE,NIGHT_DIFF_CPUE,NIGHTKITE_DIFF_CPUE) %>%
-  mutate(n=rep(c(dim(kites)[1],dim(nights)[1],dim(nightkites)[1]),2)) %>%
-  mutate(mean=mean*12322.71,lcl=lcl*12322.71,ucl=ucl*12322.71) %>%
-  rename(`prop.mean.diff(%)`=mean.1,`prop.lcl.diff(%)`=lcl.1,`prop.ucl.diff(%)`=ucl.1) %>%
-  rename(`abs.mean.diff(N)`=mean,`abs.lcl.diff(N)`=lcl,`abs.ucl.diff(N)`=ucl) %>%
-  mutate(Type=c(rep("Seabird bycatch",3),rep("Fish catch",3))) %>%
+### COMBINE ABSOLUTE NUMBERS FOR OUTPUT FILE
+ABS_SUMMARY<-bind_rows(BPUE_control, BPUE_kite, BPUE_night,BPUE_nightkite,CPUE_control, CPUE_kite, CPUE_night,CPUE_nightkite) %>%
+  mutate(n=rep(c(dim(controls)[1],dim(kites)[1],dim(nights)[1],dim(nightkites)[1]),2)) %>%
+  mutate(Type=c(rep("Seabird bycatch",4),rep("Fish catch",4))) %>%
+  mutate(mean=ifelse(Type=="Seabird bycatch",mean*12322.71,mean*670),
+         lcl=ifelse(Type=="Seabird bycatch",lcl*12322.71,lcl*670),
+         ucl=ifelse(Type=="Seabird bycatch",ucl*12322.71,ucl*670)) %>%
   select(Type,treatment,everything()) %>%
   mutate(Scenario=s)
+SCEN_ABS<-bind_rows(SCEN_ABS,ABS_SUMMARY)
 
+
+### COMBINE DIFFERENCE NUMBERS FOR OUTPUT FILE
+DIFF_SUMMARY<-bind_rows(KITE_DIFF_BPUE,NIGHT_DIFF_BPUE,NIGHTKITE_DIFF_BPUE, KITE_DIFF_CPUE,NIGHT_DIFF_CPUE,NIGHTKITE_DIFF_CPUE) %>%
+  mutate(n=rep(c(dim(kites)[1],dim(nights)[1],dim(nightkites)[1]),2)) %>%
+  mutate(Type=c(rep("Seabird bycatch",3),rep("Fish catch",3))) %>%
+  mutate(mean=ifelse(Type=="Seabird bycatch",mean*12322.71,mean*670),
+         lcl=ifelse(Type=="Seabird bycatch",lcl*12322.71,lcl*670),
+         ucl=ifelse(Type=="Seabird bycatch",ucl*12322.71,ucl*670)) %>%
+  # rename(`prop.mean.diff(%)`=mean.1,`prop.lcl.diff(%)`=lcl.1,`prop.ucl.diff(%)`=ucl.1) %>%
+  # rename(`abs.mean.diff(N)`=mean,`abs.lcl.diff(N)`=lcl,`abs.ucl.diff(N)`=ucl) %>%
+  select(Type,treatment,everything()) %>%
+  mutate(Scenario=s)
 SCEN_DIFFS<-bind_rows(SCEN_DIFFS,DIFF_SUMMARY)
+
 
 } ## end loop over all scenarios
 
 SCEN_DIFFS<-SCEN_DIFFS %>% left_join(scenarios, by="Scenario") 
-fwrite(SCEN_DIFFS,"output/LIT_mitigation_difference_summary_25scenarios.csv")
+SCEN_ABS<-SCEN_ABS %>% left_join(scenarios, by="Scenario") 
 
 
 
-### SUMMARISE THE DIFFERENCES IN A PLOT ###
+### SUMMARISE THE SEABIRD BYCATCH DIFFERENCES IN A PLOT ###
 
 SCEN_DIFFS %>%
+  filter(n>25) %>%
+  #mutate(mean.1=ifelse(mean.1<(-100),-100,mean.1)) %>%
+  mutate(lcl.1=ifelse(lcl.1<-100,-100,lcl.1)) %>%
+  mutate(ucl.1=ifelse(ucl.1>200,200,ucl.1)) %>%
   mutate(treatment=ifelse(treatment=="kite_control_diff",'kite',ifelse(treatment=="night_control_diff",'night','night+kite'))) %>%
   filter(Type=="Seabird bycatch") %>%
   filter(treatment!="kite") %>%
-  ggplot(aes(y=`prop.mean.diff(%)`, x=treatment, col=`prop.mean.diff(%)`)) +
+  ggplot(aes(y=mean.1, x=treatment, label=n)) +
   geom_point(size=3)+
-  geom_errorbar(aes(ymin=`prop.lcl.diff(%)`, ymax=`prop.ucl.diff(%)`), width=.05)+
+  geom_text(hjust=-1, vjust=0, size=3) + 
+  geom_errorbar(aes(ymin=lcl.1, ymax=ucl.1), width=.05)+
   facet_grid(haulSRdiff~deplSSdiff, scales="free_y") +
   geom_hline(aes(yintercept=0), linetype='dashed', col="grey") +
+  # annotate("text",x=-1,y=-3.1,label="Hours before sunset") +
+  # annotate("text",x=5,y=3.1,label="Hours after sunrise") +
   #scale_y_continuous(limits=c(0,0.5), breaks=seq(0,0.5,0.1)) +
-  xlab("") +
-  ylab("% change in seabird bycatch") +
+  labs(title = "Nets set hours before sunset",
+       x="Experimental treatment",
+       y="% change in seabird bycatch") +
   theme(panel.background=element_rect(fill="white", colour="black"), 
         axis.text=element_text(size=16, color="black"), 
         axis.title=element_text(size=18), 
         strip.text=element_text(size=18, color="black"),
+        title=element_text(size=18),
         legend.position="top",
         strip.background = element_blank(),
         strip.placement = "outside", 
@@ -381,12 +413,110 @@ SCEN_DIFFS %>%
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
 
+ggsave("output/LIT_relative_bycatch_mitigation_25scenarios.jpg", width=8, height=11)
+
+
+
+### SUMMARISE THE FISH CATCH DIFFERENCES IN A PLOT ###
+
+SCEN_DIFFS %>%
+  filter(n>10) %>%
+  mutate(lcl.1=ifelse(lcl.1<-100,-100,lcl.1)) %>%
+  mutate(ucl.1=ifelse(ucl.1>200,200,ucl.1)) %>%
+  mutate(treatment=ifelse(treatment=="kite_control_diff",'kite',ifelse(treatment=="night_control_diff",'night','night+kite'))) %>%
+  filter(Type=="Fish catch") %>%
+  filter(treatment!="kite") %>%
+  ggplot(aes(y=mean.1, x=treatment, label=n)) +
+  geom_point(size=3)+
+  geom_text(hjust=-1, vjust=0, size=3) + 
+  geom_errorbar(aes(ymin=lcl.1, ymax=ucl.1), width=.05)+
+  facet_grid(haulSRdiff~deplSSdiff, scales="free_y") +
+  geom_hline(aes(yintercept=0), linetype='dashed', col="grey") +
+  labs(title = "Nets set hours before sunset",
+       x="Experimental treatment",
+       y="% change in absolute fish catch") +
+  theme(panel.background=element_rect(fill="white", colour="black"), 
+        axis.text=element_text(size=16, color="black"), 
+        axis.title=element_text(size=18), 
+        strip.text=element_text(size=18, color="black"),
+        title=element_text(size=18),
+        legend.position="top",
+        strip.background = element_blank(),
+        strip.placement = "outside", 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank())
+
+ggsave("output/LIT_relative_fishcatch_mitigation_25scenarios.jpg", width=8, height=11)
 
 
 
 
+### SUMMARISE THE ABSOLUTE BYCATCH RATES IN A PLOT ###
+
+SCEN_ABS %>%
+  filter(n>50) %>%
+  filter(Type=="Seabird bycatch") %>%
+  ggplot(aes(y=mean, x=treatment, label=n)) +
+  geom_point(size=3)+
+  geom_text(hjust=-0.5, vjust=0, size=3) + 
+  geom_errorbar(aes(ymin=lcl, ymax=ucl), width=.05)+
+  facet_grid(haulSRdiff~deplSSdiff, scales="fixed") +
+  labs(title = "Nets set hours before sunset",
+       x="Experimental treatment",
+       y="seabird bycatch rate (per average unit effort)") +
+  theme(panel.background=element_rect(fill="white", colour="black"), 
+        axis.text.y=element_text(size=16, color="black"),
+        axis.text.x=element_text(size=12, color="black", vjust=0.8, angle=45), 
+        axis.title=element_text(size=18), 
+        strip.text=element_text(size=18, color="black"),
+        title=element_text(size=18),
+        legend.position="top",
+        strip.background = element_blank(),
+        strip.placement = "outside", 
+        #panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank())
+
+ggsave("output/LIT_bycatch_means_25scenarios.jpg", width=8, height=11)
 
 
+
+### SUMMARISE THE ABSOLUTE FISH CATCH RATES IN A PLOT ###
+
+SCEN_ABS %>%
+  filter(n>50) %>%
+  filter(Type=="Fish catch") %>%
+  ggplot(aes(y=mean, x=treatment, label=n)) +
+  geom_point(size=3)+
+  geom_text(hjust=-0.5, vjust=0, size=3) + 
+  geom_errorbar(aes(ymin=lcl, ymax=ucl), width=.05)+
+  facet_grid(haulSRdiff~deplSSdiff, scales="fixed") +
+  labs(title = "Nets set hours before sunset",
+       x="Experimental treatment",
+       y="Fish catch (per average net size)") +
+  theme(panel.background=element_rect(fill="white", colour="black"), 
+        axis.text.y=element_text(size=16, color="black"),
+        axis.text.x=element_text(size=12, color="black", vjust=0.8, angle=45), 
+        axis.title=element_text(size=18), 
+        strip.text=element_text(size=18, color="black"),
+        title=element_text(size=18),
+        legend.position="top",
+        strip.background = element_blank(),
+        strip.placement = "outside", 
+        #panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank())
+
+ggsave("output/LIT_fishcatch_means_25scenarios.jpg", width=8, height=11)
+
+
+
+SCEN_DIFFS<-SCEN_DIFFS %>% 
+  rename(`prop.mean.diff(%)`=mean.1,`prop.lcl.diff(%)`=lcl.1,`prop.ucl.diff(%)`=ucl.1) %>%
+  rename(`abs.mean.diff(N)`=mean,`abs.lcl.diff(N)`=lcl,`abs.ucl.diff(N)`=ucl)
+fwrite(SCEN_DIFFS,"output/LIT_mitigation_difference_summary_25scenarios.csv")
+fwrite(SCEN_ABS,"output/LIT_bycatch_rates_summary_25scenarios.csv")
 
 
 
