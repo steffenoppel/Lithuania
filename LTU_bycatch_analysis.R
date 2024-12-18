@@ -194,7 +194,7 @@ DIFF_SUMMARY<-bind_rows(KITE_DIFF_BPUE,NIGHT_DIFF_BPUE,NIGHTKITE_DIFF_BPUE, KITE
   rename(`abs.mean.diff(N)`=mean,`abs.lcl.diff(N)`=lcl,`abs.ucl.diff(N)`=ucl) %>%
   select(Type,treatment,everything())
 
-fwrite(DIFF_SUMMARY,"output/LIT_mitigation_difference_summary_2hSSnight.csv")
+#fwrite(DIFF_SUMMARY,"output/LIT_mitigation_difference_summary_2hSSnight.csv")
 
 
 
@@ -224,6 +224,48 @@ bind_rows(BPUE_control,BPUE_kite,BPUE_night,BPUE_nightkite,CPUE_control,CPUE_kit
         panel.border = element_blank())
 
 ggsave("output/LIT_bycatch_mitigation_summary_2hSSnight.jpg", width=11, height=9)
+
+
+
+
+
+
+### CREATE GRAPH FOR PRESENTATION IN GERMANY
+
+bind_rows(BPUE_control,BPUE_kite,BPUE_night,BPUE_nightkite,CPUE_control,CPUE_kite,CPUE_night,CPUE_nightkite) %>%
+  mutate(Type=c(rep("BPUE",4),rep("CPUE",4))) %>%
+  mutate(mean=ifelse(Type=="BPUE",mean*12322.71,mean*670),
+         lcl=ifelse(Type=="BPUE",lcl*12322.71,lcl*670),
+         ucl=ifelse(Type=="BPUE",ucl*12322.71,ucl*670)) %>%
+  mutate(treatment=ifelse(treatment=="control", "Kontrolle",
+                          ifelse(treatment=="kite", "Drachen",
+                                 ifelse(treatment=="night", "Nacht","Nacht + Drachen")))) %>%
+  transform(treatment=factor(treatment,levels=c("Kontrolle","Drachen","Nacht","Nacht + Drachen"))) %>% 
+  
+  ggplot(aes(y=mean, x=treatment, col=Type)) + geom_point(size=3)+
+  geom_errorbar(aes(ymin=lcl, ymax=ucl), width=.05, linewidth=1)+
+  facet_wrap(~Type, ncol=1,scales="free_y",strip.position = "left", 
+             labeller = as_labeller(c(BPUE = "Seevögel (N)", CPUE = "Fisch (g)") ) ) +
+  
+  
+  #scale_y_continuous(limits=c(0,0.5), breaks=seq(0,0.5,0.1)) +
+  xlab("") +
+  ylab("Fang pro standard Aufwand") +
+  theme(panel.background=element_rect(fill="white", colour="black"), 
+        axis.text=element_text(size=16, color="black"), 
+        axis.title=element_text(size=18), 
+        strip.text=element_text(size=18, color="black"),
+        legend.position="none",
+        strip.background = element_blank(),
+        strip.placement = "outside", 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank())
+
+
+
+
+
 
 
 
@@ -383,30 +425,78 @@ SCEN_ABS<-SCEN_ABS %>% left_join(scenarios, by="Scenario")
 
 SCEN_DIFFS %>%
   filter(n>15) %>%
+  mutate(deplSSdiff=deplSSdiff*-1) %>%
+  #(deplSSdiff=factor(deplSSdiff, levels=c(-4,-3,-2,-1,0)))
   #mutate(mean.1=ifelse(mean.1<(-100),-100,mean.1)) %>%
   mutate(lcl.1=ifelse(lcl.1<-100,-100,lcl.1)) %>%
-  mutate(ucl.1=ifelse(ucl.1>200,200,ucl.1)) %>%
+  mutate(ucl.1=ifelse(ucl.1>100,100,ucl.1)) %>%
+  mutate(group=ifelse(ucl.1<0,"good","bad")) %>%
   mutate(treatment=ifelse(treatment=="kite_control_diff",'kite',ifelse(treatment=="night_control_diff",'night','night+kite'))) %>%
   filter(Type=="Seabird bycatch") %>%
   filter(treatment!="kite") %>%
-  ggplot(aes(y=mean.1, x=treatment, label=n)) +
+  ggplot(aes(y=mean.1, x=treatment, label=n, colour=group)) +
+  geom_point(size=3)+
+  geom_text(hjust=-1, vjust=0, size=3) + 
+  geom_errorbar(aes(ymin=lcl.1, ymax=ucl.1), width=0.3, linewidth=1)+
+  facet_grid(haulSRdiff~deplSSdiff, scales="free_y") +
+  geom_hline(aes(yintercept=0), linetype='dashed', col="grey", linewidth=1) +
+  scale_y_continuous(
+    name = "% change in seabird bycatch",
+    sec.axis = sec_axis(transform=~.*1, name="Net haul time in relation to sunrise (hrs)")
+  ) +
+  scale_colour_manual(values=c(good= "forestgreen", bad="firebrick")) +
+  labs(title = "Net set time in relation to sunset (hrs)",
+       x="Experimental treatment",
+       y="% change in seabird bycatch") +
+  theme(panel.background=element_rect(fill="white", colour="black"), 
+        axis.text=element_text(size=14, color="black"), 
+        axis.title=element_text(size=18),
+        axis.text.y.right = element_blank(),
+        strip.text=element_text(size=18, color="black"),
+        title=element_text(size=16),
+        legend.position="none",
+        strip.background = element_blank(),
+        strip.placement = "outside",
+        plot.margin = unit(c(2,3,2,2), "lines"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank())
+
+ggsave("output/Figure6.jpg", width=11, height=9)
+
+
+
+
+### CREATE GERMAN PLOT FOR PRESENTATION
+
+SCEN_DIFFS %>%
+  filter(n>15) %>%
+  filter(deplSSdiff>0) %>%
+  filter(deplSSdiff<4) %>%
+  filter(haulSRdiff>-1) %>%
+  filter(haulSRdiff<3) %>%
+  mutate(lcl.1=ifelse(lcl.1<-100,-100,lcl.1)) %>%
+  mutate(ucl.1=ifelse(ucl.1>200,200,ucl.1)) %>%
+  mutate(treatment=ifelse(treatment=="kite_control_diff",'Drachen',
+                          ifelse(treatment=="night_control_diff",'Nacht','Nacht + Drachen'))) %>%
+  filter(Type=="Seabird bycatch") %>%
+  filter(treatment!="Drachen") %>%
+  mutate(type=ifelse(haulSRdiff==0,"firebrick","grey15")) %>%
+  ggplot(aes(y=mean.1, x=treatment, label=n, col=type)) +
   geom_point(size=3)+
   geom_text(hjust=-1, vjust=0, size=3) + 
   geom_errorbar(aes(ymin=lcl.1, ymax=ucl.1), width=.05)+
   facet_grid(haulSRdiff~deplSSdiff, scales="free_y") +
-  geom_hline(aes(yintercept=0), linetype='dashed', col="grey") +
-  # annotate("text",x=-1,y=-3.1,label="Hours before sunset") +
-  # annotate("text",x=5,y=3.1,label="Hours after sunrise") +
-  #scale_y_continuous(limits=c(0,0.5), breaks=seq(0,0.5,0.1)) +
-  labs(title = "Nets set hours before sunset",
-       x="Experimental treatment",
-       y="% change in seabird bycatch") +
+  geom_hline(aes(yintercept=0), linetype='dashed', col="forestgreen", linewidth=0.5) +
+  labs(title = "Stunden vor Sonnenuntergang",
+       x="Technische Massnahmen",
+       y="Differenz im Seevogel Beifang (%)") +
   theme(panel.background=element_rect(fill="white", colour="black"), 
         axis.text=element_text(size=14, color="black"), 
         axis.title=element_text(size=18), 
         strip.text=element_text(size=18, color="black"),
         title=element_text(size=18),
-        legend.position="top",
+        legend.position="none",
         strip.background = element_blank(),
         strip.placement = "outside", 
         panel.grid.major = element_blank(), 
@@ -421,28 +511,37 @@ ggsave("output/LIT_relative_bycatch_mitigation_25scenarios.jpg", width=11, heigh
 
 SCEN_DIFFS %>%
   filter(n>10) %>%
+  mutate(deplSSdiff=deplSSdiff*-1) %>%
   mutate(lcl.1=ifelse(lcl.1<-100,-100,lcl.1)) %>%
-  mutate(ucl.1=ifelse(ucl.1>200,200,ucl.1)) %>%
-  mutate(treatment=ifelse(treatment=="kite_control_diff",'kite',ifelse(treatment=="night_control_diff",'night','night+kite'))) %>%
+  mutate(ucl.1=ifelse(ucl.1>100,100,ucl.1)) %>%
+  mutate(group=ifelse(mean.1>-25,"good","bad")) %>%
+  mutate(treatment=ifelse(treatment=="kite_control_diff",'kite',ifelse(treatment=="night_control_diff",'no kite','with kite'))) %>%
   filter(Type=="Fish catch") %>%
   filter(treatment!="kite") %>%
-  ggplot(aes(y=mean.1, x=treatment, label=n)) +
+  ggplot(aes(y=mean.1, x=treatment, label=n, colour=group)) +
   geom_point(size=3)+
   geom_text(hjust=-1, vjust=0, size=3) + 
-  geom_errorbar(aes(ymin=lcl.1, ymax=ucl.1), width=.05)+
+  geom_errorbar(aes(ymin=lcl.1, ymax=ucl.1), width=0.3, linewidth=1)+
   facet_grid(haulSRdiff~deplSSdiff, scales="free_y") +
-  geom_hline(aes(yintercept=0), linetype='dashed', col="grey") +
-  labs(title = "Nets set hours before sunset",
-       x="Experimental treatment",
-       y="% change in absolute fish catch") +
+  geom_hline(aes(yintercept=0), linetype='dashed', col="grey", linewidth=1) +
+  scale_y_continuous(
+    name = "% change in fish catch",
+    sec.axis = sec_axis(transform=~.*1, name="Net haul time in relation to sunrise (hrs)")
+  ) +
+  scale_colour_manual(values=c(good= "forestgreen", bad="firebrick")) +
+  labs(title = "Net set time in relation to sunset (hrs)",
+       x="Nocturnal experiment of gill nets",
+       y="% change in seabird bycatch") +
   theme(panel.background=element_rect(fill="white", colour="black"), 
         axis.text=element_text(size=14, color="black"), 
-        axis.title=element_text(size=18), 
+        axis.title=element_text(size=18),
+        axis.text.y.right = element_blank(),
         strip.text=element_text(size=18, color="black"),
-        title=element_text(size=18),
-        legend.position="top",
+        title=element_text(size=16),
+        legend.position="none",
         strip.background = element_blank(),
-        strip.placement = "outside", 
+        strip.placement = "outside",
+        plot.margin = unit(c(2,3,2,2), "lines"),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
