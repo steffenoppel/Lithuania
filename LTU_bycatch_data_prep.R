@@ -144,8 +144,6 @@ seaducksummary<-bycatch  %>%
   group_by(Set_ID) %>%
   summarise(seaduckbycatch=sum(n, na.rm=T))
 
-
-
 #### COMBINE SUMMARIES TO CALCULATE CPUE AND BPUE
 alldata<-effortsummary %>%
   left_join(totalfishsummary, by="Set_ID") %>%
@@ -164,6 +162,30 @@ analysisdata<-alldata %>%
   select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season,Month,Total_net_area, Hours_deployed, Fishing_depth,Effort, catch,bycatch, CPUE, BPUE,LTBPUE,SDBPUE,,SStrip,TLtrip,TrialType3hSS,TrialType2hSS,daylightTripoverlap,twilightTripoverlap,deplSSdiff,haulSRdiff) %>%
   left_join(sets[,c(2,30)], by="Set_ID")
 saveRDS(analysisdata,"data/LIT_bycatch_data_formatted.rds")
+
+
+
+
+#### CREATE TABLE FOR MANUSCRIPT
+##### Table 2.  Seabird bycatch per treatment and species
+## in different mitigation measure settings during winter periods of 2021-2024 in the Baltic Sea Lithuanian coastal zone.
+
+Table2<- analysisdata %>%
+  mutate(Type=ifelse(TrialType2hSS=="Control" & Trial_type_by_fishermen!="Kites","Control",
+                     ifelse(TrialType2hSS=="Control" & Trial_type_by_fishermen=="Kites","Kite",
+                            ifelse(TrialType2hSS=="Night" & Trial_type_by_fishermen=="Kites","Night+Kite",
+                                   ifelse(TrialType2hSS=="Night" & Trial_type_by_fishermen!="Kites","Night","WTF"))))) %>%
+  select(Set_ID, Type) %>%
+  full_join(birdsummary,by="Set_ID") %>%
+  group_by(Species,Type) %>%
+  summarise(N=sum(bycatch)) %>%
+  filter(!is.na(Species)) %>%
+  spread(key=Type, value=N, fill=0) %>%
+  janitor::adorn_totals(where = c("row","col"))
+write.table(Table2, sep="\t", "clipboard", row.names=F)
+
+
+
 
 
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########

@@ -17,6 +17,10 @@
 
 ## revised analysis based on Julius Morkunas email suggestion (7 Oct 2024): create matrix of sunset and sunrise time diffs
 
+### TODO:
+# create tables 1 and 2 with real N
+# create a histogram or table for monthly distribution of sets
+# summarise diff in bycatch for seaducks, LTDU and cormorant
 
 ### Load libraries
 library(ggplot2)
@@ -25,6 +29,7 @@ library(tidyverse)
 library(stringr)
 library(lubridate)
 library(adehabitatHS)
+library(janitor)
 filter<-dplyr::filter
 select<-dplyr::select
 
@@ -47,6 +52,59 @@ head(data)
 dim(data)
 unique(data$Season)
 length(unique(data$Trip_ID))
+
+
+
+
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+#####
+#####     SUMMARIES FOR MANUSCRIPT -------------------------
+#####
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~########
+
+### GENERATE TABLES 1 and 2 and a histogram for months
+# Table 1. Trials performed during different seasons with different mitigation measures during winter seasons in the Baltic Sea Lithuanian coastal waters. 
+
+Table1<- data %>%
+  mutate(Type=ifelse(TrialType2hSS=="Control" & Trial_type_by_fishermen!="Kites","Control",
+                     ifelse(TrialType2hSS=="Control" & Trial_type_by_fishermen=="Kites","Kite",
+                            ifelse(TrialType2hSS=="Night" & Trial_type_by_fishermen=="Kites","Night+Kite",
+                                   ifelse(TrialType2hSS=="Night" & Trial_type_by_fishermen!="Kites","Night","WTF"))))) %>%
+  group_by(Season,Type) %>%
+  summarise(N=length(unique(Set_ID))) %>%
+  spread(key=Season, value=N) %>%
+  janitor::adorn_totals(where = c("row","col"))
+write.table(Table1, sep="\t", "clipboard", row.names=F)
+
+
+FIGS1<- data %>%
+  mutate(Type=ifelse(TrialType2hSS=="Control" & Trial_type_by_fishermen!="Kites","Control",
+                     ifelse(TrialType2hSS=="Control" & Trial_type_by_fishermen=="Kites","Kite",
+                            ifelse(TrialType2hSS=="Night" & Trial_type_by_fishermen=="Kites","Night+Kite",
+                                   ifelse(TrialType2hSS=="Night" & Trial_type_by_fishermen!="Kites","Night","WTF"))))) %>%
+  mutate(fakedate=if_else(Month<7,ymd("2020-01-01")+months(Month-1),
+                          ymd("2019-01-01")+months(Month-1))) %>%
+  group_by(fakedate,Type) %>%
+  summarise(N=length(unique(Set_ID))) %>%
+  left_join(Table1, by="Type") %>%
+  mutate(prop=N/Total) %>%
+  
+  ggplot(aes(x=fakedate,y=prop, fill=Type, colour=Type)) +
+  geom_bar(position="dodge", stat="identity") +
+  labs(y="Proportion of all net sets") +
+  scale_x_date(name="Month",date_breaks = "1 month", date_labels =  "%B") +
+  theme(panel.background=element_rect(fill="white", colour="black"), 
+        axis.text=element_text(size=14, color="black"), 
+        axis.title=element_text(size=18),
+        legend.position="inside",
+        legend.position.inside=c(0.1,0.85),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank())
+
+ggsave("output/Figure_S1.jpg", width=11, height=9)
+
+
 
 
 
