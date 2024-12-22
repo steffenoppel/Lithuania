@@ -15,6 +15,8 @@
 
 ## updated on 25 Sept 2025 to include columns of nighttime (with cutoffs of sunset, civil, and nautical twilight)
 
+## updated on 22 Dec 2024 to include cormorants and Table 2
+
 
 ### Load libraries
 library(ggplot2)
@@ -144,6 +146,13 @@ seaducksummary<-bycatch  %>%
   group_by(Set_ID) %>%
   summarise(seaduckbycatch=sum(n, na.rm=T))
 
+cormorantsummary<-bycatch  %>%
+  rename(Species=`Bird species`) %>%
+  filter(Species %in% c("Phalacrocorax carbo")) %>%
+  mutate(n=1) %>%
+  group_by(Set_ID) %>%
+  summarise(cormoranbycatch=sum(n, na.rm=T))
+
 #### COMBINE SUMMARIES TO CALCULATE CPUE AND BPUE
 alldata<-effortsummary %>%
   left_join(totalfishsummary, by="Set_ID") %>%
@@ -154,12 +163,14 @@ alldata<-effortsummary %>%
   mutate(LTDUbycatch=ifelse(is.na(LTDUbycatch),0,LTDUbycatch)) %>% ## fill in the 0 for sets with no bird bycatch
   left_join(seaducksummary, by="Set_ID") %>%
   mutate(seaduckbycatch=ifelse(is.na(seaduckbycatch),0,seaduckbycatch)) %>% ## fill in the 0 for sets with no bird bycatch
-  mutate(CPUE=catch/Effort, BPUE=bycatch/Effort, LTBPUE=LTDUbycatch/Effort, SDBPUE=seaduckbycatch/Effort)
+  left_join(cormorantsummary, by="Set_ID") %>%
+  mutate(cormoranbycatch=ifelse(is.na(cormoranbycatch),0,cormoranbycatch)) %>% ## fill in the 0 for sets with no bird bycatch
+  mutate(CPUE=catch/Effort, BPUE=bycatch/Effort, LTBPUE=LTDUbycatch/Effort, SDBPUE=seaduckbycatch/Effort, CORBPUE=cormoranbycatch/Effort)
 head(alldata)
 
 #### SAVE DATA FOR ANALYSIS
 analysisdata<-alldata %>%
-  select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season,Month,Total_net_area, Hours_deployed, Fishing_depth,Effort, catch,bycatch, CPUE, BPUE,LTBPUE,SDBPUE,,SStrip,TLtrip,TrialType3hSS,TrialType2hSS,daylightTripoverlap,twilightTripoverlap,deplSSdiff,haulSRdiff) %>%
+  select(Trip_ID,Set_ID,Trial_type_by_fishermen,Season,Month,Total_net_area, Hours_deployed, Fishing_depth,Effort, catch,bycatch, CPUE, BPUE,LTBPUE,SDBPUE,CORBPUE,SStrip,TLtrip,TrialType3hSS,TrialType2hSS,daylightTripoverlap,twilightTripoverlap,deplSSdiff,haulSRdiff) %>%
   left_join(sets[,c(2,30)], by="Set_ID")
 saveRDS(analysisdata,"data/LIT_bycatch_data_formatted.rds")
 
