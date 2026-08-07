@@ -199,6 +199,64 @@ ggsave("output/BPUE_bootstrap_assessment.jpg", width=11, height=9)
 
 
 
+## review question 2: fit a zero-inflated NB GLM
+
+library(pscl)
+library(MASS)
+modeldat<-data %>% mutate(kite=if_else(Trial_type_by_fishermen=="Kites",1,0))
+
+model.pois.2 = glm(bycatch ~ Effort + TrialType2hSS * kite, data = modeldat, family = poisson)
+summary(model.pois.2)
+1 - pchisq(summary(model.pois.2)$deviance,
+           summary(model.pois.2)$df.residual
+) ## GOF test suggests no fit at all!!
+plotdat<-expand.grid(TrialType2hSS=unique(modeldat$TrialType2hSS),kite=c(0,1)) %>% mutate(Effort=12322.71)
+
+cbind(plotdat, 
+      Mean = predict(model.pois.2, newdata = plotdat, type = "response"), 
+      SE = predict(model.pois.2, newdata = plotdat, type = "response", se.fit = T)$se.fit
+)
+
+
+model.nb = glm.nb(bycatch ~ Effort + TrialType2hSS * kite, data = modeldat)
+summary(model.nb)
+1 - pchisq(summary(model.nb)$deviance,
+           summary(model.nb)$df.residual
+)  ## GOF test suggests no fit at all!!
+cbind(plotdat, 
+      Mean = predict(model.nb, newdata = plotdat, type = "response"), 
+      SE = predict(model.nb, newdata = plotdat, type="response", se.fit = T)$se.fit
+)
+odTest(model.nb, alpha=.05, digits = max(3, getOption("digits") - 3))  ### Poisson does not fit
+
+
+model.zip = zeroinfl(bycatch ~ Effort + TrialType2hSS * kite|1, data = modeldat)
+summary(model.zip)
+gof(model.zip)
+
+model.zip.2 = zeroinfl(bycatch ~ Effort + TrialType2hSS * kite|TrialType2hSS * kite, data = modeldat)
+summary(model.zip.2)
+
+
+cbind(plotdat, 
+      Count = predict(model.zip.2, newdata = plotdat, type = "count"),
+      Zero = predict(model.zip.2, newdata = plotdat, type = "zero")
+)
+
+
+model.zip.3 = zeroinfl(BPUE ~ TrialType2hSS * kite|1, data = modeldat, dist = "negbin")
+summary(model.zip.3)
+
+
+
+
+
+
+
+
+
+
+### -------------------- RESUME PREVIOUS ANALYSIS --------------------------- ####
 
 ### calculating the BPUE differences
 
