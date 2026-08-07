@@ -279,11 +279,6 @@ emmeans(
 
 # 10. PLOT RESPONSES ------------------------------------
 
-library(MASS)
-library(pscl)
-library(ggplot2)
-library(dplyr)
-library(tidyr)
 
 #--------------------------------------------------
 # Fit models
@@ -469,7 +464,7 @@ ggplot(
     aes(ymin = lwr, ymax = upr),
     width = 0.15
   ) +
-  facet_wrap(~ model) +
+  facet_wrap(~ model, scales="free_y") +
   labs(
     x = "",
     y = "Predicted mean bycatch"
